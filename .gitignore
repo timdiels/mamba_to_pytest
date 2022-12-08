@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build
+dist
+
+# Python virtual environments
+.venv
+.pyenv*
+.*_env*
+
+# Coverage
+.coverage
+htmlcov
+
+# Other
+/src/mamba_to_pytest/tests_manual/test_foo.py
+.idea
