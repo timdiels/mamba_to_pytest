@@ -261,3 +261,9 @@ with context('handle functions which start with self even without fixture') as s
     with it('can use self func'):
         self.can_call_me()
         self.can_call_me_too()
+
+        # Check that plain (self) is replaced too
+        def f(x):
+            x.can_call_me()
+
+        f(self)

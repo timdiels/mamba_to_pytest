@@ -2,7 +2,6 @@ from __future__ import annotations
 import dataclasses
 import io
 import re
-import typing as t
 
 from mamba_to_pytest import nodes
 from mamba_to_pytest.constants import TestScope
@@ -10,6 +9,7 @@ from mamba_to_pytest.node_visitors.base import NodeVisitor
 
 
 _SELF_VAR_ASSIGNMENT_PATTERN = re.compile(r'(self[.][a-zA-Z0-9_]+)\s*=[^=]')
+_SELF_PATTERN = re.compile(r'(\W)self([^.\w])')  # in some cases replace self despite not having seen it in self vars
 
 
 _SelfVars = frozenset[str]
@@ -191,6 +191,7 @@ class _ConvertSelfVars(NodeVisitor):
             body = node.body
             for var in self._current_vars:
                 body = body.replace(var, f"{fixture_name}{var[len('self'):]}")
+            body = _SELF_PATTERN.sub(rf'\1{fixture_name}\2', body)
             return dataclasses.replace(node, body=body)
         else:
             return node
