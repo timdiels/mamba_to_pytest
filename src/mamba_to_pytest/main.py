@@ -13,6 +13,7 @@ from mamba_to_pytest.node_visitors.write import write_tree
 from mamba_to_pytest.steps.group_lines import group_plain_lines
 from mamba_to_pytest.steps.convert_with_lines import convert_with_lines, \
     split_off_comments
+from mamba_to_pytest.steps.ignore_class_and_def_bodies import ignore_class_and_def_bodies
 from mamba_to_pytest.steps.split_mamba import split_mamba
 
 
@@ -91,6 +92,7 @@ def convert_mamba_file(mamba_file: Path, out_file: Path) -> None:
 
 def convert_mamba(mamba_input: t.TextIO, pytest_output: t.TextIO):
     lines = split_mamba(mamba_input)
+    lines = ignore_class_and_def_bodies(lines)
     lines = split_off_comments(lines)
     blocks_and_lines = group_plain_lines(lines)
     root = convert_with_lines(blocks_and_lines)

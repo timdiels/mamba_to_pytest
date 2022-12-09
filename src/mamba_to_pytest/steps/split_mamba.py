@@ -1,15 +1,9 @@
 from __future__ import annotations
-import re
 import typing as t
 
-from mamba_to_pytest.lines import WithLine, LineOfCode, BlankLine
-
-_LINE_PATTERN = re.compile(r'^( *)([^ ].*)?$')
-_MAMBA_IMPORT_PATTERN = re.compile(r'''^(from|import) mamba(\s|$)''')
-
-_WITH_START = r'''^with\s+(description|context|describe|it|(?:before|after)[._](?:each|all))\s*'''
-_WITH_START_PATTERN = re.compile(_WITH_START)
-_WITH_PATTERN = re.compile(_WITH_START + r'''(?:[(]['"](.*)['"][)])?( as self)?:\s*(#.*)?$''')
+from mamba_to_pytest.constants import MAMBA_IMPORT_PATTERN, WITH_START_PATTERN, CLASS_PATTERN, METHOD_START_PATTERN, \
+    LINE_PATTERN, WITH_PATTERN
+from mamba_to_pytest.lines import WithLine, LineOfCode, BlankLine, ClassHeading, MethodHeading
 
 
 def split_mamba(mamba_input: t.TextIO) -> t.Iterable[LineOfCode | BlankLine]:
@@ -23,17 +17,23 @@ def split_mamba(mamba_input: t.TextIO) -> t.Iterable[LineOfCode | BlankLine]:
         else:
             indent, tail = _parse_line(line)
 
-            if _MAMBA_IMPORT_PATTERN.match(tail):
+            if MAMBA_IMPORT_PATTERN.match(tail):
                 continue
 
-            if _WITH_START_PATTERN.match(tail):
+            if WITH_START_PATTERN.match(tail):
                 yield _parse_a_with_line(indent, tail, line)
+            elif CLASS_PATTERN.match(tail):
+                yield ClassHeading(indent=indent, line=line + '\n')
+            elif METHOD_START_PATTERN.match(tail):
+                # Don't parse it much yet. We only need to parse it if it's the child of a TestContext, but we can't
+                # tell yet.
+                yield MethodHeading(indent=indent, tail=tail, line=line + '\n')
             else:
                 yield LineOfCode(indent=indent, line=line + '\n')
 
 
 def _parse_line(line: str) -> tuple[int, str]:
-    match = _LINE_PATTERN.match(line)
+    match = LINE_PATTERN.match(line)
     assert match
     leading_spaces, tail = match.groups()
     assert not tail.startswith('\t')
@@ -42,7 +42,7 @@ def _parse_line(line: str) -> tuple[int, str]:
 
 
 def _parse_a_with_line(indent: int, tail: str, line: str) -> WithLine:
-    match = _WITH_PATTERN.match(tail)
+    match = WITH_PATTERN.match(tail)
     assert match, f'Cannot convert this with-line automatically, please simplify it first:\n{line}'
     return WithLine(
         variable=match.group(1).replace('_', '.'),
