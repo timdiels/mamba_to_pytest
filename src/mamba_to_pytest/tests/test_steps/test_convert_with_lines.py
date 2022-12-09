@@ -2,31 +2,11 @@ from __future__ import annotations
 import typing as t
 
 import pytest
-from more_itertools import one
 
 from mamba_to_pytest.constants import TestScope
-from mamba_to_pytest.lines import WithLine, LineOfCode
+from mamba_to_pytest.lines import WithLine
 from mamba_to_pytest.nodes import Test, BlockOfCode, TestSetup, TestTeardown, TestContext
-from mamba_to_pytest.steps.convert_with_lines import convert_with_lines, \
-    split_off_comments
-
-
-def test_split_off_comments():
-    line = LineOfCode(indent=0, line='leave me alone\n'),
-    lines = [
-        WithLine(
-            indent=2, line='with var1:\n', variable='it', name='name 1', comment='# comment 1', has_as_self=False
-        ),
-        line,
-    ]
-
-    lines = tuple(split_off_comments(lines))
-
-    assert lines == (
-        LineOfCode(indent=2, line="  # comment 1\n"),
-        WithLine(indent=2, line='with var1:\n', variable='it', name='name 1', comment=None, has_as_self=False),
-        line,
-    )
+from mamba_to_pytest.steps.convert_with_lines import convert_with_lines
 
 
 class TestConvertWithLines:

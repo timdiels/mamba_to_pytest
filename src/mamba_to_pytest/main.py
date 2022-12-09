@@ -11,11 +11,10 @@ from mamba_to_pytest.node_visitors.flatten_singleton_test_contexts import flatte
 from mamba_to_pytest.node_visitors.validate import validate_node
 from mamba_to_pytest.node_visitors.write import write_tree
 from mamba_to_pytest.steps.group_lines import group_plain_lines
-from mamba_to_pytest.steps.convert_with_lines import convert_with_lines, \
-    split_off_comments
+from mamba_to_pytest.steps.convert_with_lines import convert_with_lines
 from mamba_to_pytest.steps.ignore_class_and_def_bodies import ignore_class_and_def_bodies
 from mamba_to_pytest.steps.split_mamba import split_mamba
-
+from mamba_to_pytest.steps.split_off_comments import split_off_comments
 
 ENABLED_TEST_PATTERN = re.compile(r'test_(.*)_spec.py')
 DISABLED_TEST_PATTERN = re.compile(r'disabled_(.*)_disabled.py')

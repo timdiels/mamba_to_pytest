@@ -1,23 +1,13 @@
 from __future__ import annotations
 
-import dataclasses
 import typing as t
 
 from more_itertools import one, peekable
 
 from mamba_to_pytest.constants import TestScope
-from mamba_to_pytest.lines import LineOfCode, WithLine, BlankLine
+from mamba_to_pytest.lines import WithLine
 from mamba_to_pytest.names import convert_mamba_name_to_method_name, convert_mamba_name_to_class_name
 from mamba_to_pytest.nodes import NodeBase, BlockOfCode, RootNode, Test, TestTeardown, TestSetup, TestContext
-
-
-def split_off_comments(lines: t.Iterable[LineOfCode | BlankLine]) -> t.Iterable[LineOfCode | BlankLine]:
-    for line in lines:
-        if isinstance(line, WithLine) and line.comment:
-            yield LineOfCode(indent=line.indent, line=' ' * line.indent + line.comment + '\n')
-            yield dataclasses.replace(line, comment=None)
-        else:
-            yield line
 
 
 def convert_with_lines(blocks_and_lines: t.Iterable[BlockOfCode | WithLine]) -> RootNode:
