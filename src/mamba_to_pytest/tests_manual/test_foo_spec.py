@@ -248,12 +248,16 @@ with context('handle functions which start with self') as self:
 
     with it('can use add'):
         self.add_thingy(2)
-        assert self.thinges == [6]
+        assert self.thingies == [6]
 
 
 with context('handle functions which start with self even without fixture') as self:
     def can_call_me(self):
         ...
 
+    def can_call_me_too(self):
+        ...
+
     with it('can use self func'):
         self.can_call_me()
+        self.can_call_me_too()

@@ -26,11 +26,6 @@ class NodeBase(abc.ABC):
 
 
 @dataclasses.dataclass(frozen=True)
-class CompositeNodeBase(NodeBase, abc.ABC):
-    children: tuple[NodeBase, ...]
-
-
-@dataclasses.dataclass(frozen=True)
 class CodeWrapperNodeBase(NodeBase, abc.ABC):
     indent: int
     body: BlockOfCode
@@ -41,7 +36,9 @@ class CodeWrapperNodeBase(NodeBase, abc.ABC):
 
 
 @dataclasses.dataclass(frozen=True)
-class RootNode(CompositeNodeBase):
+class RootNode(NodeBase):
+    children: tuple[NodeBase, ...]
+
     def accept(self, visitor: v.NodeVisitor) -> t.Any:
         return visitor.visit_root(self)
 
@@ -58,24 +55,51 @@ class BlockOfCode(NodeBase):
     def accept(self, visitor: v.NodeVisitor) -> t.Any:
         return visitor.visit_block_of_code(self)
 
+    def replace_indent(self, indent: int) -> BlockOfCode:
+        return dataclasses.replace(
+            self,
+            indent=indent,
+            body='\n'.join(' ' * indent + line[self.indent:] for line in self.body.splitlines()) + '\n'
+        )
+
 
 @dataclasses.dataclass(frozen=True)
-class TestContext(CompositeNodeBase):
+class TestContext(NodeBase):
     name: str
     has_as_self: bool
     indent: int
+    class_fixture: Fixture | None
+    method_fixture: Fixture | None
+    other_children: tuple[NodeBase, ...]
 
     def __post_init__(self):
         super().__post_init__()
         assert self.children  # must have at least 1
+        if self.class_fixture:
+            assert self.class_fixture.scope == TestScope.CLASS
+        if self.method_fixture:
+            assert self.method_fixture.scope == TestScope.METHOD
         for child in self.children:
             assert child.indent > self.indent
+        for child in self.other_children:
+            assert not isinstance(child, Fixture)
 
     def accept(self, visitor: v.NodeVisitor) -> t.Any:
         return visitor.visit_test_context(self)
 
     def __str__(self):
         return f'TestContext({self.name})'
+
+    @property
+    def children(self) -> tuple[NodeBase, ...]:
+        return tuple(self._iter_children())
+
+    def _iter_children(self) -> t.Iterable[NodeBase]:
+        if self.class_fixture:
+            yield self.class_fixture
+        if self.method_fixture:
+            yield self.method_fixture
+        yield from self.other_children
 
 
 @dataclasses.dataclass(frozen=True)
@@ -109,26 +133,52 @@ class TestTeardown(CodeWrapperNodeBase):
 class Fixture(NodeBase):
     setup: TestSetup | None
     teardown: TestTeardown | None
+    methods: tuple[Method, ...]
+    scope: TestScope
+    indent: int
 
     def __post_init__(self):
-        assert self.setup or self.teardown
-        if self.setup and self.teardown:
-            assert self.setup.indent == self.teardown.indent
-            assert self.setup.scope == self.teardown.scope
+        assert self.setup or self.teardown or self.methods
+        assert self.indent < self.body_indent
+
+        if self.setup:
+            assert self.setup.indent == self.indent
+            assert self.setup.scope == self.scope
+            assert self.setup.body.indent == self.body_indent
+
+        if self.teardown:
+            assert self.teardown.indent == self.indent
+            assert self.teardown.scope == self.scope
+            assert self.teardown.body.indent == self.body_indent
+
+        for method in self.methods:
+            assert method.indent == self.body_indent
 
     def accept(self, visitor: v.NodeVisitor) -> t.Any:
         return visitor.visit_fixture(self)
 
     @property
-    def scope(self) -> TestScope:
-        return self.either.scope
-
-    @property
-    def indent(self) -> int:
-        return self.either.indent
-
-    @property
-    def either(self) -> TestSetup | TestTeardown:
+    def body_indent(self):
         either = self.setup or self.teardown
-        assert either  # keep mypy happy
-        return either
+        if either:
+            return either.body.indent
+        return self.methods[0].indent
+
+
+@dataclasses.dataclass(frozen=True)
+class Method(CodeWrapperNodeBase):
+    """
+    The node analog to a MethodHeading line
+
+    Looks like a method, i.e. has a self param, but never actually appears inside a class because we weeded those out
+    in one of the steps.
+    """
+
+    name: str
+    tail_without_self: str
+
+    def accept(self, visitor: v.NodeVisitor) -> t.Any:
+        return visitor.visit_method(self)
+
+    def __str__(self):
+        return f'Method({self.name})'

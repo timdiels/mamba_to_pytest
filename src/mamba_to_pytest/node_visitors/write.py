@@ -29,6 +29,9 @@ class _WriteVisitor(NodeVisitor):
     def visit_fixture(self, node: nodes.Fixture) -> None:
         raise AssertionError("Should no longer exist")
 
+    def visit_method(self, node: nodes.Method) -> None:
+        raise AssertionError("Should no longer exist")
+
     def __init__(self, out: t.TextIO):
         self._out = out
 

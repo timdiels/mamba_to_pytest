@@ -15,5 +15,7 @@ def ignore_class_and_def_bodies(lines: t.Iterable[LineOfCode | BlankLine]) -> t.
         else:
             active_scope = None
             if isinstance(line, ClassHeading) or isinstance(line, MethodHeading):
-                active_scope = line = line.to_line_of_code()
+                if isinstance(line, ClassHeading):
+                    line = line.to_line_of_code()
+                active_scope = line
             yield line

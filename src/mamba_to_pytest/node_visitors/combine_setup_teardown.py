@@ -8,7 +8,6 @@ from mamba_to_pytest.node_visitors.base import NodeVisitor
 
 
 class _CombineSetupAndTeardownVisitor(NodeVisitor):
-
     def visit_root(self, node: nodes.RootNode) -> nodes.RootNode:
         return self._replace_children(node)
 
@@ -16,6 +15,9 @@ class _CombineSetupAndTeardownVisitor(NodeVisitor):
         return node
 
     def visit_test(self, node: nodes.Test) -> nodes.Test:
+        return node
+
+    def visit_method(self, node: nodes.Method) -> nodes.Method:
         return node
 
     def visit_test_setup(self, node: nodes.TestSetup) -> nodes.TestSetup:
@@ -29,9 +31,14 @@ class _CombineSetupAndTeardownVisitor(NodeVisitor):
 
     def visit_test_context(self, node: nodes.TestContext) -> nodes.TestContext:
         setup_nodes, teardown_nodes, other_children = self._split_children(node)
-        other_children = (child.accept(self) for child in other_children)
-        fixtures = self._combine_setup_and_teardown(setup_nodes, teardown_nodes)
-        return dataclasses.replace(node, children=(*fixtures, *other_children))
+        other_children = tuple(child.accept(self) for child in other_children)
+        class_fixture, method_fixture = self._combine_setup_and_teardown(setup_nodes, teardown_nodes)
+        return dataclasses.replace(
+            node,
+            class_fixture=class_fixture,
+            method_fixture=method_fixture,
+            other_children=other_children,
+        )
 
     @staticmethod
     def _split_children(node):
@@ -52,13 +59,21 @@ class _CombineSetupAndTeardownVisitor(NodeVisitor):
     @staticmethod
     def _combine_setup_and_teardown(
             setup_nodes: dict[TestScope, nodes.TestSetup], teardown_nodes: dict[TestScope, nodes.TestTeardown]
-    ) -> typing.Iterable[nodes.Fixture]:
+    ) -> typing.Iterable[nodes.Fixture | None]:
         for scope in (TestScope.CLASS, TestScope.METHOD):
-            if scope in setup_nodes or scope in teardown_nodes:
+            setup = setup_nodes.get(scope)
+            teardown = teardown_nodes.get(scope)
+            either = setup or teardown
+            if either:
                 yield nodes.Fixture(
-                    setup=setup_nodes.get(scope),
-                    teardown=teardown_nodes.get(scope)
+                    setup=setup,
+                    teardown=teardown,
+                    methods=(),
+                    indent=either.indent,
+                    scope=either.scope,
                 )
+            else:
+                yield None
 
 
 def combine_setup_teardown(root: nodes.RootNode) -> nodes.RootNode:

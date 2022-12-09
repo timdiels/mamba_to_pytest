@@ -23,9 +23,9 @@ def test_ignore_class_and_def_bodies():
         _create_with_line(indent=2),
         _create_with_line(indent=2),
 
-        # Method also starts a scope
+        # Method also starts a scope, but does not itself get transformed
         MethodHeading(indent=1, line='  start of scope\n', tail='start of scope\n'),
-        # Even inner scopes get transformed
+        # Inner scopes get transformed, even methods
         ClassHeading(indent=4, line='  start of scope\n'),
         MethodHeading(indent=4, line='  start of scope\n', tail='start of scope\n'),
         # and lines outside the inner scope still get transformed
@@ -56,9 +56,9 @@ def test_ignore_class_and_def_bodies():
         _create_with_line(indent=2),
         _create_with_line(indent=2),
 
-        # Method also starts a scope
-        LineOfCode(indent=1, line='  start of scope\n'),
-        # Even inner scopes get transformed
+        # Method also starts a scope, but does not itself get transformed
+        MethodHeading(indent=1, line='  start of scope\n', tail='start of scope\n'),
+        # Inner scopes get transformed, even methods
         LineOfCode(indent=4, line='  start of scope\n'),
         LineOfCode(indent=4, line='  start of scope\n'),
         # and lines outside the inner scope still get transformed

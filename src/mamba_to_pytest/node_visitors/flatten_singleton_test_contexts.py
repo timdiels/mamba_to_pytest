@@ -1,6 +1,5 @@
 from __future__ import annotations
 import dataclasses
-from textwrap import dedent
 
 from mamba_to_pytest import nodes
 from mamba_to_pytest.names import prepend_pytest_class_name_to_test_method
@@ -34,11 +33,7 @@ class _FlattenSingletonTestContextsVisitor(NodeVisitor):
                         child,
                         name=merged_name,
                         indent=node.indent,
-                        body=dataclasses.replace(
-                            body,
-                            indent=child.indent,
-                            body='\n'.join(line[body.indent - child.indent:] for line in body.body.splitlines()) + '\n'
-                        )
+                        body=body.replace_indent(child.indent),
                     )
         return node
 
@@ -55,6 +50,9 @@ class _FlattenSingletonTestContextsVisitor(NodeVisitor):
         return node
 
     def visit_fixture(self, node: nodes.Fixture) -> nodes.Fixture:
+        raise AssertionError("These don't exist yet")
+
+    def visit_method(self, node: nodes.Method) -> nodes.Method:
         return node
 
 

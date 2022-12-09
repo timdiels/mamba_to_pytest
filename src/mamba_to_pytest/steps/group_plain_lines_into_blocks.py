@@ -1,11 +1,13 @@
 from __future__ import annotations
 import typing as t
 
-from mamba_to_pytest.lines import LineOfCode, WithLine, BlankLine
+from mamba_to_pytest.lines import LineOfCode, WithLine, BlankLine, MethodHeading
 from mamba_to_pytest.nodes import BlockOfCode
 
 
-def group_plain_lines(lines: t.Iterable[LineOfCode | BlankLine]) -> t.Iterable[BlockOfCode | WithLine]:
+def group_plain_lines_into_blocks(
+        lines: t.Iterable[LineOfCode | BlankLine]
+) -> t.Iterable[BlockOfCode | WithLine | MethodHeading]:
     yield from _LineGrouper()(lines)
 
 
@@ -13,9 +15,9 @@ class _LineGrouper:
     def __init__(self):
         self._body_lines: list[LineOfCode | BlankLine] = []
 
-    def __call__(self, lines: t.Iterable[LineOfCode | BlankLine]) -> t.Iterable[BlockOfCode | WithLine]:
+    def __call__(self, lines: t.Iterable[LineOfCode | BlankLine]) -> t.Iterable[BlockOfCode | WithLine | MethodHeading]:
         for line in lines:
-            if isinstance(line, WithLine):
+            if isinstance(line, WithLine) or isinstance(line, MethodHeading):
                 yield from self._finish_block_if_any()
                 yield line
             else:

@@ -31,6 +31,9 @@ class _ValidationVisitor(NodeVisitor):
     def visit_test(self, node: nodes.Test) -> None:
         pass
 
+    def visit_method(self, node: nodes.Method) -> t.Any:
+        pass
+
     @staticmethod
     def _assert_no_duplicate_names(children: t.Iterable[nodes.NodeBase]):
         seen = set()

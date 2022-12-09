@@ -5,13 +5,14 @@ import typing as t
 from pathlib import Path
 from textwrap import indent
 
+from mamba_to_pytest.node_visitors.add_methods_to_fixtures import add_methods_to_fixtures
 from mamba_to_pytest.node_visitors.combine_setup_teardown import combine_setup_teardown
 from mamba_to_pytest.node_visitors.convert_self_vars import convert_self_vars
 from mamba_to_pytest.node_visitors.flatten_singleton_test_contexts import flatten_singleton_test_contexts
 from mamba_to_pytest.node_visitors.validate import validate_node
 from mamba_to_pytest.node_visitors.write import write_tree
-from mamba_to_pytest.steps.group_lines import group_plain_lines
-from mamba_to_pytest.steps.convert_with_lines import convert_with_lines
+from mamba_to_pytest.steps.group_plain_lines_into_blocks import group_plain_lines_into_blocks
+from mamba_to_pytest.steps.group_lines_into_tree import group_lines_into_tree
 from mamba_to_pytest.steps.ignore_class_and_def_bodies import ignore_class_and_def_bodies
 from mamba_to_pytest.steps.split_mamba import split_mamba
 from mamba_to_pytest.steps.split_off_comments import split_off_comments
@@ -93,10 +94,11 @@ def convert_mamba(mamba_input: t.TextIO, pytest_output: t.TextIO):
     lines = split_mamba(mamba_input)
     lines = ignore_class_and_def_bodies(lines)
     lines = split_off_comments(lines)
-    blocks_and_lines = group_plain_lines(lines)
-    root = convert_with_lines(blocks_and_lines)
+    blocks_and_lines = group_plain_lines_into_blocks(lines)
+    root = group_lines_into_tree(blocks_and_lines)
     root = flatten_singleton_test_contexts(root)
     root = combine_setup_teardown(root)
+    root = add_methods_to_fixtures(root)
     validate_node(root)
     root = convert_self_vars(root)
     write_tree(root, pytest_output)

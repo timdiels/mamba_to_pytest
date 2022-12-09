@@ -2,6 +2,7 @@ from __future__ import annotations
 import dataclasses
 import io
 import re
+import typing as t
 
 from mamba_to_pytest import nodes
 from mamba_to_pytest.constants import TestScope
@@ -16,7 +17,6 @@ _VarScopes = dict[nodes.TestContext, _SelfVars]
 
 
 class _CollectSelfVars(NodeVisitor):
-
     def __init__(self):
         self._var_scopes: _VarScopes = {}
         self._in_scope = False
@@ -48,12 +48,13 @@ class _CollectSelfVars(NodeVisitor):
             return frozenset()
 
     def visit_fixture(self, node: nodes.Fixture) -> _SelfVars:
-        both_self_vars: list[_SelfVars] = []
+        all_self_vars: list[_SelfVars] = []
         if node.setup:
-            both_self_vars.append(node.setup.accept(self))
+            all_self_vars.append(node.setup.accept(self))
         if node.teardown:
-            both_self_vars.append(node.teardown.accept(self))
-        return frozenset.union(*both_self_vars)
+            all_self_vars.append(node.teardown.accept(self))
+        all_self_vars.extend(method.accept(self) for method in node.methods)
+        return frozenset.union(*all_self_vars)
 
     def visit_test_setup(self, node: nodes.TestSetup) -> _SelfVars:
         return node.body.accept(self)
@@ -64,6 +65,9 @@ class _CollectSelfVars(NodeVisitor):
     def visit_test(self, node: nodes.Test) -> _SelfVars:
         return node.body.accept(self)
 
+    def visit_method(self, node: nodes.Method) -> _SelfVars:
+        return node.body.accept(self) | frozenset({f'self.{node.name}'})
+
     def visit_block_of_code(self, node: nodes.BlockOfCode) -> _SelfVars:
         return frozenset(
             match.group(1) for match in _SELF_VAR_ASSIGNMENT_PATTERN.finditer(node.body)
@@ -71,7 +75,6 @@ class _CollectSelfVars(NodeVisitor):
 
 
 class _ConvertSelfVars(NodeVisitor):
-
     _CLASS_FIXTURE = 'mamba_cls'
     _METHOD_FIXTURE = 'mamba'
 
@@ -103,7 +106,6 @@ class _ConvertSelfVars(NodeVisitor):
             return self._replace_children(node)
 
     def visit_test(self, node: nodes.Test) -> nodes.BlockOfCode:
-        assert isinstance(node.body, nodes.BlockOfCode)
         node = self._replace_children(node)
 
         params = ['self']
@@ -116,6 +118,9 @@ class _ConvertSelfVars(NodeVisitor):
             indent=node.indent,
             body=f"{indent_str}def {node.name}({params_str}):\n{node.body.body}",
         )
+
+    def visit_method(self, node: nodes.Method) -> nodes.Method:
+        return self._replace_children(node)
 
     def visit_test_setup(self, node: nodes.TestSetup) -> nodes.TestSetup:
         return self._replace_children(node)
@@ -136,8 +141,8 @@ class _ConvertSelfVars(NodeVisitor):
 
         code = io.StringIO()
         indent_str = ' ' * node.indent
-        body_indent_str = ' ' * node.either.body.indent
-        fixture_has_return = bool(self._current_vars)
+        body_indent_str = ' ' * node.body_indent
+        fixture_has_return = self._current_vars or node.methods
         if fixture_has_return:
             fixture_name = self._get_fixture_name(node.scope)
         else:
@@ -147,9 +152,20 @@ class _ConvertSelfVars(NodeVisitor):
         code.write(f'{indent_str}@pytest.fixture(autouse=True{pytest_scope})\n')
         if fixture_has_return:
             code.write(f'{indent_str}def {fixture_name}(self, {fixture_name}):\n')
-            code.write(f'{body_indent_str}{fixture_name} = {fixture_name}.copy()\n')
         else:
             code.write(f'{indent_str}def {fixture_name}(self):\n')
+
+        for method in node.methods:
+            # Write methods
+            code.write(' ' * method.indent + method.tail_without_self)
+            code.write(method.body.body)
+
+        if fixture_has_return:
+            code.write(f'{body_indent_str}{fixture_name} = {fixture_name}.copy()\n')
+
+        for method in node.methods:
+            # Write method assignments
+            code.write(f'{body_indent_str}mamba.{method.name} = {method.name}\n')
 
         if node.setup:
             code.write(node.setup.body.body.rstrip('\n') + '\n')

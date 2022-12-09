@@ -17,8 +17,8 @@ WITH_PATTERN = re.compile(_WITH_START + rf'''(?:[(]['"](.*)['"][)])?( as self)?:
 CLASS_PATTERN = re.compile(r'''^class\s''')
 
 
-_METHOD_START = r'''^def\s+\w+\(\s*self(\W|$)'''
-METHOD_START_PATTERN = re.compile(_METHOD_START)
+METHOD_START_PATTERN = re.compile(r'''^def\s+\w+\s*\(\s*self(\W|$)''')
+METHOD_PATTERN = re.compile(rf'^def\s+(\w+)\s*\(\s*self[^,]*(?:,\s*([^#]+))?\)([^:#]*:{_TRAILING_COMMENT})$')
 
 
 class TestScope(Enum):

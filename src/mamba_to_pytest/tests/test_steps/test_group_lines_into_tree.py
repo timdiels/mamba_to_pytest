@@ -1,12 +1,16 @@
 from __future__ import annotations
 import typing as t
+from functools import partial
 
 import pytest
+from more_itertools import one
 
 from mamba_to_pytest.constants import TestScope
-from mamba_to_pytest.lines import WithLine
-from mamba_to_pytest.nodes import Test, BlockOfCode, TestSetup, TestTeardown, TestContext
-from mamba_to_pytest.steps.convert_with_lines import convert_with_lines
+from mamba_to_pytest.lines import WithLine, MethodHeading
+from mamba_to_pytest.nodes import Test, BlockOfCode, TestSetup, TestTeardown, TestContext, Method, NodeBase
+from mamba_to_pytest.steps.group_lines_into_tree import group_lines_into_tree
+
+create_context = partial(TestContext, class_fixture=None, method_fixture=None)
 
 
 class TestConvertWithLines:
@@ -26,7 +30,7 @@ class TestConvertWithLines:
             block,
         ]
 
-        root = convert_with_lines(blocks_and_lines)
+        root = group_lines_into_tree(blocks_and_lines)
 
         # noinspection PyArgumentList
         assert root.children == (cls(body=block, scope=scope, indent=2),)
@@ -38,13 +42,13 @@ class TestConvertWithLines:
             block,
         ]
 
-        root = convert_with_lines(blocks_and_lines)
+        root = group_lines_into_tree(blocks_and_lines)
 
         assert root.children == (
             Test(indent=2, name='test_name_1', body=block),
         )
 
-    def test_context_node(self):
+    def test_context_node_and_nesting(self):
         top_block = BlockOfCode(indent=2, body='   top body\n')
         child_block = BlockOfCode(indent=3, body='   child body\n')
         deep_block = BlockOfCode(indent=4, body='   deep body\n')
@@ -63,19 +67,52 @@ class TestConvertWithLines:
             top_block,
         ]
 
-        root = convert_with_lines(blocks_and_lines)
+        root = group_lines_into_tree(blocks_and_lines)
 
         assert root.children == (
             top_block,
-            TestContext(
+            create_context(
                 indent=2,
                 name='TestName1',
                 has_as_self=True,
-                children=(
+                other_children=(
                     child_block,
-                    TestContext(indent=3, name='TestName2', has_as_self=False, children=(deep_block, deep_block)),
+                    create_context(
+                        indent=3,
+                        name='TestName2',
+                        has_as_self=False,
+                        other_children=(deep_block, deep_block),
+                    ),
                     child_block,
                 ),
             ),
             top_block,
         )
+
+
+@pytest.mark.parametrize(
+    'tail,tail_without_self',
+    (
+        ('def foo_1Az(self):\n', 'def foo_1Az():\n'),
+        ('def foo_1Az(self, x):\n', 'def foo_1Az(x):\n'),
+        ('def foo_1Az( self: X ,  x: int, y):  # comment ,:foo\n', 'def foo_1Az(x: int, y):  # comment ,:foo\n'),
+        ('def foo_1Az( self : X):\n', 'def foo_1Az():\n'),
+        ('def  foo_1Az ( self : X, x) :  # comment\n', 'def foo_1Az(x) :  # comment\n'),
+        ('def foo_1Az(self, x) -> int :\n', 'def foo_1Az(x) -> int :\n'),
+    )
+)
+def test_convert_method_headings(tail, tail_without_self):
+    block = BlockOfCode(indent=2, body='body\n')
+    blocks_and_lines = (
+        MethodHeading(indent=1, line='original line\n', tail=tail),
+        block,
+    )
+
+    root = group_lines_into_tree(blocks_and_lines)
+
+    assert one(root.children) == Method(
+        indent=1,
+        body=block,
+        name='foo_1Az',
+        tail_without_self=tail_without_self,
+    )

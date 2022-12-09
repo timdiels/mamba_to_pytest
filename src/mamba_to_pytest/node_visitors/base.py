@@ -24,6 +24,10 @@ class NodeVisitor(abc.ABC):
         ...
 
     @abc.abstractmethod
+    def visit_method(self, node: nodes.Method) -> t.Any:
+        ...
+
+    @abc.abstractmethod
     def visit_test_context(self, node: nodes.TestContext) -> t.Any:
         ...
 
@@ -44,7 +48,7 @@ class NodeVisitor(abc.ABC):
 
     @staticmethod
     def _get_children(node: nodes.NodeBase) -> t.Iterable[nodes.NodeBase]:
-        if isinstance(node, nodes.CompositeNodeBase):
+        if isinstance(node, nodes.RootNode) or isinstance(node, nodes.TestContext):
             yield from node.children
         elif isinstance(node, nodes.CodeWrapperNodeBase):
             yield node.body
@@ -56,9 +60,35 @@ class NodeVisitor(abc.ABC):
                 yield node.teardown
 
     def _replace_children(self, node: N) -> N:
-        if isinstance(node, nodes.CompositeNodeBase):
+        if isinstance(node, nodes.RootNode):
             return dataclasses.replace(  # type: ignore
                 node, children=tuple(child.accept(self) for child in node.children)
+            )
+        elif isinstance(node, nodes.TestContext):
+            other_children = []
+
+            if node.class_fixture:
+                class_fixture = node.class_fixture.accept(self)
+                if not isinstance(class_fixture, nodes.Fixture):
+                    other_children.append(class_fixture)
+                    class_fixture = None
+            else:
+                class_fixture = None
+
+            if node.method_fixture:
+                method_fixture = node.method_fixture.accept(self)
+                if not isinstance(method_fixture, nodes.Fixture):
+                    other_children.append(method_fixture)
+                    method_fixture = None
+            else:
+                method_fixture = None
+
+            other_children.extend(child.accept(self) for child in node.other_children)
+            return dataclasses.replace(  # type: ignore
+                node,
+                class_fixture=class_fixture,
+                method_fixture=method_fixture,
+                other_children=tuple(other_children),
             )
         elif isinstance(node, nodes.CodeWrapperNodeBase):
             return dataclasses.replace(node, body=node.body.accept(self))  # type: ignore
@@ -68,4 +98,5 @@ class NodeVisitor(abc.ABC):
                 node,
                 setup=node.setup.accept(self) if node.setup else None,
                 teardown=node.teardown.accept(self) if node.teardown else None,
+                methods=tuple(method.accept(self) for method in node.methods),
             )

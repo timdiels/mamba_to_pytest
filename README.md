@@ -25,29 +25,4 @@ adjust it automatically). If the tests fail, you can adjust either the mamba fil
 Manual fixes after conversion:
 
 - Prefix test directories with `test_`
-- Create a `conftest.py` (see below) at the root of any tests which use the mamba pytest fixture
-- ...
-
-The conftest:
-
-```python
-from __future__ import annotations
-from copy import copy
-
-import pytest
-
-
-class MambaVars:
-    def copy(self) -> MambaVars:
-        return copy(self)
-
-
-@pytest.fixture(scope="class")
-def mamba_cls():
-    return MambaVars()
-
-
-@pytest.fixture
-def mamba(mamba_cls):
-    return mamba_cls.copy()
-```
+- Create a `conftest.py` (copy tests_manual/conftest.py) at the root of any tests which use the mamba pytest fixture
