@@ -14,25 +14,40 @@ from mamba_to_pytest.steps.split_mamba import split_mamba
         ('    class  Foo:\n', ClassHeading),
         ('    class  Foo:  # comment\n', ClassHeading),
         ('    class Foo\n', ClassHeading),
-        ('    def foo(self):\n', MethodHeading),
-        ('    def foo(self, x):\n', MethodHeading),
-        ('    def foo(self,\n', MethodHeading),
-        ('    def foo(self:\n', MethodHeading),
-        ('    def foo(self \n', MethodHeading),
-        ('    def foo(self\n', MethodHeading),
-        ('    def  foo(self\n', MethodHeading),
-        ('    def foo( self\n', MethodHeading),
-        ('    def foo(self # comment\n', MethodHeading),
         ('    def foo(not_self\n', LineOfCode),
         ('    def foo(self_not\n', LineOfCode),
     ),
 )
-def test_simple_lines(line: str, cls):
+def test_parse_simple_lines(line: str, cls):
     actual = one(split_mamba(io.StringIO(line)))
-    assert not isinstance(actual, BlankLine)  # sooth mypy
+    assert isinstance(actual, cls)  # sooth mypy
+    assert actual.__class__ == cls
     assert actual.indent == 4
     assert actual.line == line
-    assert actual.__class__ == cls
+
+
+@pytest.mark.parametrize(
+    'line',
+    (
+        '    def foo_1Az(self):\n',
+        '    def foo_1Az(self, x):\n',
+        '    def foo_1Az(self,\n',
+        '    def foo_1Az(self:\n',
+        '    def foo_1Az(self \n',
+        '    def foo_1Az(self\n',
+        '    def  foo_1Az(self\n',
+        '    def foo_1Az( self\n',
+        '    def foo_1Az(self # comment\n',
+        '    def  foo_1Az ( self : X, x) :  # comment\n',
+    ),
+)
+def test_parse_method_heading(line: str):
+    actual = one(split_mamba(io.StringIO(line)))
+    assert isinstance(actual, MethodHeading)  # sooth mypy
+    assert actual.__class__ == MethodHeading
+    assert actual.indent == 4
+    assert actual.line == line
+    assert actual.name == 'foo_1Az'
 
 
 @pytest.mark.parametrize('line', ('\n', '    \n'))

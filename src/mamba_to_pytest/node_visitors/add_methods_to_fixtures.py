@@ -24,13 +24,7 @@ class _AddMethodsToFixtures(NodeVisitor):
                 fixture_body_indent = fixture_indent + 4
 
             # Indent methods into fixture
-            methods = tuple(
-                dataclasses.replace(
-                    method,
-                    indent=fixture_body_indent,
-                    body=method.body.replace_indent(fixture_body_indent + 4))
-                for method in methods
-            )
+            methods = tuple(method.replace_indent(fixture_body_indent) for method in methods)
 
             if node.method_fixture:
                 assert not node.method_fixture.methods

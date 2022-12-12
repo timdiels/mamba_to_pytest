@@ -4,7 +4,7 @@ import typing as t
 
 from more_itertools import one, peekable
 
-from mamba_to_pytest.constants import TestScope, METHOD_PATTERN
+from mamba_to_pytest.constants import TestScope
 from mamba_to_pytest.lines import WithLine, MethodHeading, LineOfCode
 from mamba_to_pytest.names import convert_mamba_name_to_method_name, convert_mamba_name_to_class_name
 from mamba_to_pytest.nodes import NodeBase, BlockOfCode, RootNode, Test, TestTeardown, TestSetup, TestContext, Method
@@ -38,14 +38,11 @@ def _convert_block_heading(line: WithLine | MethodHeading, children: tuple[NodeB
     if isinstance(line, WithLine):
         return _convert_with_line(line, children)
     else:
-        match = METHOD_PATTERN.match(line.tail)
-        assert match, f"Cannot parse method that may need converting:\n{line.line}"
-        name = match.group(1)
         return Method(
             indent=line.indent,
+            name=line.name,
             body=_get_single_block_child(line, children),
-            name=name,
-            tail_without_self=f'def {name}({match.group(2) or ""}){match.group(3).rstrip()}\n',
+            tail=line.line[line.indent:],
         )
 
 

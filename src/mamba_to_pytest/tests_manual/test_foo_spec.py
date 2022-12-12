@@ -240,7 +240,7 @@ with context('handle functions which start with self') as self:
         self.thingies.append(self.factor * i)
 
     def ignore_without_self(i):
-        'this func should not end up in the fixture'
+        """this func should not end up in the fixture"""
 
     with before.each:
         self.factor = 3
@@ -249,6 +249,17 @@ with context('handle functions which start with self') as self:
     with it('can use add'):
         self.add_thingy(2)
         assert self.thingies == [6]
+
+    with context('use correct mamba copy'):
+        with before.each:
+            ...  # another fixture to create another mamba copy
+
+        with it('can use add'):
+            self.add_thingy(3)
+            assert self.thingies == [9]
+
+    with it('isolated from previous tests'):
+        assert not self.thingies
 
 
 with context('handle functions which start with self even without fixture') as self:
@@ -264,6 +275,6 @@ with context('handle functions which start with self even without fixture') as s
 
         # Check that plain (self) is replaced too
         def f(x):
-            x.can_call_me()
+            x.can_call_me(x)  # although shortcoming, you manually need to pass x again here
 
         f(self)

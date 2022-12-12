@@ -28,7 +28,7 @@ class TestGroupPlainLines:
         'separator_line',
         (
             WithLine(indent=0, line='line3\n', variable='it', name=None, comment=None, has_as_self=False),
-            MethodHeading(indent=0, line='line3\n', tail='line3\n'),
+            MethodHeading(indent=0, line='line3\n', name='not_relevant'),
         ),
     )
     def test_do_not_group_across_separator_lines(self, separator_line):

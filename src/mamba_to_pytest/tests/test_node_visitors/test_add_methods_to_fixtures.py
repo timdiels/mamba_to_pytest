@@ -26,7 +26,7 @@ def create_context(
 
 
 def create_method(*, indent: int, name: str = 'f1', body: BlockOfCode) -> Method:
-    return Method(indent=indent, body=body, name=name, tail_without_self='tail\n')
+    return Method(indent=indent, body=body, name=name, tail='tail\n')
 
 
 def create_fixture(indent: int, scope: TestScope, body: BlockOfCode, methods: tuple[Method, ...] = ()) -> Fixture:

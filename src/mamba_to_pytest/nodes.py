@@ -141,6 +141,9 @@ class Fixture(NodeBase):
         assert self.setup or self.teardown or self.methods
         assert self.indent < self.body_indent
 
+        if self.scope == TestScope.CLASS:
+            assert not self.methods
+
         if self.setup:
             assert self.setup.indent == self.indent
             assert self.setup.scope == self.scope
@@ -175,10 +178,17 @@ class Method(CodeWrapperNodeBase):
     """
 
     name: str
-    tail_without_self: str
+    tail: str
 
     def accept(self, visitor: v.NodeVisitor) -> t.Any:
         return visitor.visit_method(self)
 
     def __str__(self):
         return f'Method({self.name})'
+
+    def replace_indent(self, indent: int) -> Method:
+        return dataclasses.replace(
+            self,
+            indent=indent,
+            body=self.body.replace_indent(indent + 4),
+        )

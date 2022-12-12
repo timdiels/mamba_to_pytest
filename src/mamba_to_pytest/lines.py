@@ -49,4 +49,4 @@ class MethodHeading(LineOfCode):
     first line of a multiline heading: e.g. def foo(self
     """
 
-    tail: str
+    name: str

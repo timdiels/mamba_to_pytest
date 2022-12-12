@@ -24,10 +24,9 @@ def split_mamba(mamba_input: t.TextIO) -> t.Iterable[LineOfCode | BlankLine]:
                 yield _parse_a_with_line(indent, tail, line)
             elif CLASS_PATTERN.match(tail):
                 yield ClassHeading(indent=indent, line=line + '\n')
-            elif METHOD_START_PATTERN.match(tail):
-                # Don't parse it much yet. We only need to parse it if it's the child of a TestContext, but we can't
-                # tell yet.
-                yield MethodHeading(indent=indent, tail=tail, line=line + '\n')
+            elif match := METHOD_START_PATTERN.match(tail):
+                name = match.group(1)
+                yield MethodHeading(indent=indent, name=name, line=line + '\n')
             else:
                 yield LineOfCode(indent=indent, line=line + '\n')
 

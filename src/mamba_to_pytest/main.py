@@ -7,6 +7,7 @@ from textwrap import indent
 
 from mamba_to_pytest.node_visitors.add_methods_to_fixtures import add_methods_to_fixtures
 from mamba_to_pytest.node_visitors.combine_setup_teardown import combine_setup_teardown
+from mamba_to_pytest.node_visitors.convert_self_method_calls import convert_self_method_calls
 from mamba_to_pytest.node_visitors.convert_self_vars import convert_self_vars
 from mamba_to_pytest.node_visitors.flatten_singleton_test_contexts import flatten_singleton_test_contexts
 from mamba_to_pytest.node_visitors.validate import validate_node
@@ -100,6 +101,7 @@ def convert_mamba(mamba_input: t.TextIO, pytest_output: t.TextIO):
     root = combine_setup_teardown(root)
     root = add_methods_to_fixtures(root)
     validate_node(root)
+    root = convert_self_method_calls(root)
     root = convert_self_vars(root)
     write_tree(root, pytest_output)
 

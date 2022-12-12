@@ -75,13 +75,10 @@ class _CollectSelfVars(NodeVisitor):
 
 
 class _ConvertSelfVars(NodeVisitor):
-    _CLASS_FIXTURE = 'mamba_cls'
-    _METHOD_FIXTURE = 'mamba'
-
     def __init__(self, var_scopes: _VarScopes):
         self._var_scopes = var_scopes
         self._current_vars: _SelfVars | None = None
-        self._current_scope: TestScope | None = None
+        self._current_fixture: nodes.Fixture | None = None
         self._uses_pytest_pkg = False
         self._other_count: int = 0
 
@@ -109,8 +106,9 @@ class _ConvertSelfVars(NodeVisitor):
         node = self._replace_children(node)
 
         params = ['self']
-        if self._current_vars and f'{self._METHOD_FIXTURE}.' in node.body.body:
-            params.append(self._METHOD_FIXTURE)
+        fixture_name = TestScope.METHOD.fixture_name
+        if self._current_vars and f'{fixture_name}.' in node.body.body:
+            params.append(fixture_name)
         params_str = ", ".join(params)
 
         indent_str = ' ' * node.indent
@@ -130,9 +128,9 @@ class _ConvertSelfVars(NodeVisitor):
 
     def visit_fixture(self, node: nodes.Fixture) -> nodes.BlockOfCode:
         self._uses_pytest_pkg = True
-        self._current_scope = node.scope
+        self._current_fixture = node
         node = self._replace_children(node)
-        self._current_scope = None
+        self._current_fixture = None
 
         if node.scope == TestScope.CLASS:
             pytest_scope = ', scope="class"'
@@ -144,7 +142,7 @@ class _ConvertSelfVars(NodeVisitor):
         body_indent_str = ' ' * node.body_indent
         fixture_has_return = self._current_vars or node.methods
         if fixture_has_return:
-            fixture_name = self._get_fixture_name(node.scope)
+            fixture_name = node.scope.fixture_name
         else:
             self._other_count += 1
             fixture_name = f'mamba_other{self._other_count}'
@@ -156,8 +154,7 @@ class _ConvertSelfVars(NodeVisitor):
             code.write(f'{indent_str}def {fixture_name}(self):\n')
 
         for method in node.methods:
-            # Write methods
-            code.write(' ' * method.indent + method.tail_without_self)
+            code.write(' ' * method.indent + method.tail)
             code.write(method.body.body)
 
         if fixture_has_return:
@@ -184,10 +181,10 @@ class _ConvertSelfVars(NodeVisitor):
 
     def visit_block_of_code(self, node: nodes.BlockOfCode) -> nodes.BlockOfCode:
         if self._current_vars:
-            if self._current_scope:
-                fixture_name = self._get_fixture_name(self._current_scope)
+            if self._current_fixture:
+                fixture_name = self._current_fixture.scope.fixture_name
             else:
-                fixture_name = self._METHOD_FIXTURE
+                fixture_name = TestScope.METHOD.fixture_name
             body = node.body
             for var in self._current_vars:
                 body = body.replace(var, f"{fixture_name}{var[len('self'):]}")
@@ -195,12 +192,6 @@ class _ConvertSelfVars(NodeVisitor):
             return dataclasses.replace(node, body=body)
         else:
             return node
-
-    def _get_fixture_name(self, scope: TestScope) -> str:
-        if scope == TestScope.CLASS:
-            return self._CLASS_FIXTURE
-        else:
-            return self._METHOD_FIXTURE
 
 
 def convert_self_vars(root: nodes.RootNode) -> nodes.RootNode:

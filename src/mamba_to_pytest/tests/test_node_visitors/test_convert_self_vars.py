@@ -176,8 +176,8 @@ class TestCollectSelfVars:
                 Method(
                     indent=1,
                     name='add_me',
-                    tail_without_self='does not matter\n',
                     body=BlockOfCode(indent=2, body='self.x = 1\n'),
+                    tail='tail\n',
                 ),
             )
         )
@@ -364,8 +364,8 @@ class TestConvertSelfVars:
                         Method(
                             indent=4,
                             name='add_thingy',
-                            tail_without_self='def add_thingy(x):\n',
                             body=BlockOfCode(indent=6, body=' ' * 6 + 'self.y = x\n\n'),
+                            tail='def add_thingy(mamba, x):\n',
                         ),
                     ),
                     scope=TestScope.METHOD,
@@ -389,7 +389,7 @@ class TestConvertSelfVars:
                             body=(
                                 '  @pytest.fixture(autouse=True)\n'
                                 '  def mamba(self, mamba):\n'
-                                '    def add_thingy(x):\n'
+                                '    def add_thingy(mamba, x):\n'
                                 '      mamba.y = x\n\n'
                                 '    mamba = mamba.copy()\n'
                                 '    mamba.add_thingy = add_thingy\n'

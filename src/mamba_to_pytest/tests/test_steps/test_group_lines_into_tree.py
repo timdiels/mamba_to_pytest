@@ -90,21 +90,10 @@ class TestConvertWithLines:
         )
 
 
-@pytest.mark.parametrize(
-    'tail,tail_without_self',
-    (
-        ('def foo_1Az(self):\n', 'def foo_1Az():\n'),
-        ('def foo_1Az(self, x):\n', 'def foo_1Az(x):\n'),
-        ('def foo_1Az( self: X ,  x: int, y):  # comment ,:foo\n', 'def foo_1Az(x: int, y):  # comment ,:foo\n'),
-        ('def foo_1Az( self : X):\n', 'def foo_1Az():\n'),
-        ('def  foo_1Az ( self : X, x) :  # comment\n', 'def foo_1Az(x) :  # comment\n'),
-        ('def foo_1Az(self, x) -> int :\n', 'def foo_1Az(x) -> int :\n'),
-    )
-)
-def test_convert_method_headings(tail, tail_without_self):
+def test_convert_method_heading():
     block = BlockOfCode(indent=2, body='body\n')
     blocks_and_lines = (
-        MethodHeading(indent=1, line='original line\n', tail=tail),
+        MethodHeading(indent=1, line=' original line\n', name='foo'),
         block,
     )
 
@@ -113,6 +102,6 @@ def test_convert_method_headings(tail, tail_without_self):
     assert one(root.children) == Method(
         indent=1,
         body=block,
-        name='foo_1Az',
-        tail_without_self=tail_without_self,
+        name='foo',
+        tail='original line\n'
     )

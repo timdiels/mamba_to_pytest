@@ -17,10 +17,20 @@ WITH_PATTERN = re.compile(_WITH_START + rf'''(?:[(]['"](.*)['"][)])?( as self)?:
 CLASS_PATTERN = re.compile(r'''^class\s''')
 
 
-METHOD_START_PATTERN = re.compile(r'''^def\s+\w+\s*\(\s*self(\W|$)''')
-METHOD_PATTERN = re.compile(rf'^def\s+(\w+)\s*\(\s*self[^,]*(?:,\s*([^#]+))?\)([^:#]*:{_TRAILING_COMMENT})$')
+METHOD_START_PATTERN = re.compile(r'''^def\s+(\w+)\s*\(\s*self(?:\W|$)''')
 
 
 class TestScope(Enum):
-    METHOD = 'METHOD'
-    CLASS = 'CLASS'
+    METHOD = 'METHOD', 'mamba'
+    CLASS = 'CLASS', 'mamba_cls'
+
+    def __new__(cls, *args, **kwargs):
+        return object.__new__(cls)
+
+    def __init__(self, value, fixture_name):
+        self._value_ = value
+        self._fixture_name = fixture_name
+
+    @property
+    def fixture_name(self) -> str:
+        return self._fixture_name
