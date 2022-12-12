@@ -8,13 +8,21 @@ from mamba_to_pytest.node_visitors.base import NodeVisitor
 
 class _ValidationVisitor(NodeVisitor):
 
+    def __init__(self):
+        self._in_self_scope: bool = False
+
     def visit_root(self, node: nodes.RootNode) -> None:
         self._assert_no_duplicate_names(node.children)
         self._visit_children(node)
 
     def visit_test_context(self, node: nodes.TestContext) -> None:
+        enter_scope = node.has_as_self and not self._in_self_scope
+        if enter_scope:
+            self._in_self_scope = True
         self._assert_no_duplicate_names(node.children)
         self._visit_children(node)
+        if enter_scope:
+            self._in_self_scope = False
 
     def visit_test_setup(self, node: nodes.TestSetup) -> None:
         self._visit_children(node)
@@ -32,7 +40,7 @@ class _ValidationVisitor(NodeVisitor):
         pass
 
     def visit_method(self, node: nodes.Method) -> t.Any:
-        pass
+        assert self._in_self_scope, f'Methods outside a `with as self:` context are not supported:\n{node}'
 
     @staticmethod
     def _assert_no_duplicate_names(children: t.Iterable[nodes.NodeBase]):
