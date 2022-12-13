@@ -4,7 +4,10 @@ import dataclasses
 
 
 @dataclasses.dataclass(frozen=True)
-class BlankLine:
+class CodelessLine:
+    """
+    A line which has no actual code, e.g. a blank line or a full-line comment
+    """
     line: str
 
 

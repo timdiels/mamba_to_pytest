@@ -59,8 +59,19 @@ class BlockOfCode(NodeBase):
         return dataclasses.replace(
             self,
             indent=indent,
-            body='\n'.join(' ' * indent + line[self.indent:] for line in self.body.splitlines()) + '\n'
+            body='\n'.join(self._reindent_lines(indent)) + '\n',
         )
+
+    def _reindent_lines(self, indent: int) -> t.Iterable[str]:
+        for line in self.body.splitlines():
+            # Comments can have less indent than the block, because we treated those lines as having no indent. We
+            # need to be careful not to chop off the actual front of a comment when dedenting beyond its indent.
+            line_indent = len(line) - len(line.lstrip())
+            if line_indent == 0 and line.startswith('#'):
+                # These should probably be left alone, they tend to be whole blocks of commented code.
+                yield line
+            else:
+                yield ' ' * indent + line[min(self.indent, line_indent):]
 
 
 @dataclasses.dataclass(frozen=True)

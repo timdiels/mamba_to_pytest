@@ -2,7 +2,7 @@ import io
 import pytest
 from more_itertools import one
 
-from mamba_to_pytest.lines import LineOfCode, WithLine, BlankLine, ClassHeading, MethodHeading
+from mamba_to_pytest.lines import LineOfCode, WithLine, CodelessLine, ClassHeading, MethodHeading
 from mamba_to_pytest.steps.split_mamba import split_mamba
 
 
@@ -10,6 +10,7 @@ from mamba_to_pytest.steps.split_mamba import split_mamba
     'line,cls',
     (
         ('    code\n', LineOfCode),
+        ('    code  # comment\n', LineOfCode),
         ('    class Foo:\n', ClassHeading),
         ('    class  Foo:\n', ClassHeading),
         ('    class  Foo:  # comment\n', ClassHeading),
@@ -50,10 +51,10 @@ def test_parse_method_heading(line: str):
     assert actual.name == 'foo_1Az'
 
 
-@pytest.mark.parametrize('line', ('\n', '    \n'))
-def test_parse_blank_line(line):
+@pytest.mark.parametrize('line', ('\n', '    \n', '# comment\n', '  # comment\n'))
+def test_parse_codeless_line(line):
     node = one(split_mamba(io.StringIO(line)))
-    assert node == BlankLine(line=line)
+    assert node == CodelessLine(line=line)
 
 
 @pytest.mark.parametrize(

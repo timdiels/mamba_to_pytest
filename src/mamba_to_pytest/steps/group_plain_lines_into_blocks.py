@@ -1,21 +1,21 @@
 from __future__ import annotations
 import typing as t
 
-from mamba_to_pytest.lines import LineOfCode, WithLine, BlankLine, MethodHeading
+from mamba_to_pytest.lines import LineOfCode, WithLine, CodelessLine, MethodHeading
 from mamba_to_pytest.nodes import BlockOfCode
 
 
 def group_plain_lines_into_blocks(
-        lines: t.Iterable[LineOfCode | BlankLine]
+        lines: t.Iterable[LineOfCode | CodelessLine]
 ) -> t.Iterable[BlockOfCode | WithLine | MethodHeading]:
     yield from _LineGrouper()(lines)
 
 
 class _LineGrouper:
     def __init__(self):
-        self._body_lines: list[LineOfCode | BlankLine] = []
+        self._body_lines: list[LineOfCode | CodelessLine] = []
 
-    def __call__(self, lines: t.Iterable[LineOfCode | BlankLine]) -> t.Iterable[BlockOfCode | WithLine | MethodHeading]:
+    def __call__(self, lines: t.Iterable[LineOfCode | CodelessLine]) -> t.Iterable[BlockOfCode | WithLine | MethodHeading]:
         for line in lines:
             if isinstance(line, WithLine) or isinstance(line, MethodHeading):
                 yield from self._finish_block_if_any()
@@ -34,12 +34,12 @@ class _LineGrouper:
     def _body_indent(self) -> int | None:
         assert self._body_lines
         for line in self._body_lines:
-            if not isinstance(line, BlankLine):
+            if not isinstance(line, CodelessLine):
                 return line.indent
         return None
 
-    def _is_line_in_current_block(self, line: LineOfCode | BlankLine):
-        if isinstance(line, BlankLine):
+    def _is_line_in_current_block(self, line: LineOfCode | CodelessLine):
+        if isinstance(line, CodelessLine):
             return True
         body_indent = self._body_indent
         if body_indent is None:

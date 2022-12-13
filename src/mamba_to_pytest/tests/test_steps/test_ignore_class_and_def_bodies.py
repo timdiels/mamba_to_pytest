@@ -1,4 +1,4 @@
-from mamba_to_pytest.lines import LineOfCode, WithLine, BlankLine, ClassHeading, MethodHeading
+from mamba_to_pytest.lines import LineOfCode, WithLine, CodelessLine, ClassHeading, MethodHeading
 from mamba_to_pytest.steps.ignore_class_and_def_bodies import ignore_class_and_def_bodies
 
 
@@ -10,13 +10,13 @@ def test_ignore_class_and_def_bodies():
     lines = (
         # Leave lines outside of scope alone
         LineOfCode(indent=0, line='leave me alone\n'),
-        BlankLine(line=' \n'),
+        CodelessLine(line=' \n'),
         _create_with_line(indent=1),
 
         # Transform lines other than blanks inside scope to plain lines of code
         ClassHeading(indent=2, line='  start of scope\n'),
         LineOfCode(indent=3, line='leave me alone\n'),
-        BlankLine(line=' \n'),
+        CodelessLine(line=' \n'),
         _create_with_line(indent=3),
 
         # Same level (or higher) ends the scope. I.e. these lines remain untouched
@@ -43,13 +43,13 @@ def test_ignore_class_and_def_bodies():
     assert actual == (
         # Leave lines outside of scope alone
         LineOfCode(indent=0, line='leave me alone\n'),
-        BlankLine(line=' \n'),
+        CodelessLine(line=' \n'),
         _create_with_line(indent=1),
 
         # Transform lines other than blanks inside scope to plain lines of code
         LineOfCode(indent=2, line='  start of scope\n'),
         LineOfCode(indent=3, line='leave me alone\n'),
-        BlankLine(line=' \n'),
+        CodelessLine(line=' \n'),
         LineOfCode(indent=3, line='with line\n'),
 
         # Same level (or higher) ends the scope. I.e. these lines remain untouched

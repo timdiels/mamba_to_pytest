@@ -3,15 +3,15 @@ import typing as t
 
 from mamba_to_pytest.constants import MAMBA_IMPORT_PATTERN, WITH_START_PATTERN, CLASS_PATTERN, METHOD_START_PATTERN, \
     LINE_PATTERN, WITH_PATTERN
-from mamba_to_pytest.lines import WithLine, LineOfCode, BlankLine, ClassHeading, MethodHeading
+from mamba_to_pytest.lines import WithLine, LineOfCode, CodelessLine, ClassHeading, MethodHeading
 
 
-def split_mamba(mamba_input: t.TextIO) -> t.Iterable[LineOfCode | BlankLine]:
+def split_mamba(mamba_input: t.TextIO) -> t.Iterable[LineOfCode | CodelessLine]:
     for line in mamba_input.readlines():
         line = line.rstrip('\n')
         is_blank_line = not line or line.isspace()
         if is_blank_line:
-            yield BlankLine(line=line + '\n')
+            yield CodelessLine(line=line + '\n')
         elif line.startswith('def test_'):
             raise Exception(f"Function needs to be renamed as pytest will think it's a test:\n{line}")
         else:
@@ -20,7 +20,9 @@ def split_mamba(mamba_input: t.TextIO) -> t.Iterable[LineOfCode | BlankLine]:
             if MAMBA_IMPORT_PATTERN.match(tail):
                 continue
 
-            if WITH_START_PATTERN.match(tail):
+            if tail.startswith('#'):
+                yield CodelessLine(line + '\n')
+            elif WITH_START_PATTERN.match(tail):
                 yield _parse_a_with_line(indent, tail, line)
             elif CLASS_PATTERN.match(tail):
                 yield ClassHeading(indent=indent, line=line + '\n')
