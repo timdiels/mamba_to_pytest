@@ -55,9 +55,13 @@ class _ConvertSelfMethods(NodeVisitor):
 
         body = node.body
         for method in self._method_scopes[-1]:
-            method_call_start = rf'(\W)self(.{method.name}\()'
-            body = re.sub(rf'{method_call_start}\s*([^)])', rf'\1{fixture_name}\2{fixture_name}, \3', body)
-            body = re.sub(rf'{method_call_start}\s*\)', rf'\1{fixture_name}\2{fixture_name})', body)
+            # Replace method calls
+            method_start = rf'(\W)self(.{method.name})'
+            body = re.sub(rf'{method_start}\(\s*([^)])', rf'\1{fixture_name}\2({fixture_name}, \3', body)
+            body = re.sub(rf'{method_start}\(\s*\)', rf'\1{fixture_name}\2({fixture_name})', body)
+
+            # Replace method references
+            body = re.sub(rf'{method_start}(\W)', rf'\1{fixture_name}\2\3', body)
         return dataclasses.replace(node, body=body)
 
     def _replace_with_scope(self, node: nodes.TestSetup | nodes.TestTeardown):

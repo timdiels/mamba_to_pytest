@@ -22,7 +22,7 @@ def create_context(
     )
 
 
-def test_convert_self_method_calls():
+def test_convert_self_methods():
     """
     Convert in all relevant nodes with methods in current and ancestor contexts
     """
@@ -30,7 +30,7 @@ def test_convert_self_method_calls():
     def create_block(indent: int) -> BlockOfCode:
         return BlockOfCode(indent=indent, body='  self.outer(x)\nself.inner(y)\n')
 
-    def create_method(*, indent: int, name: str = 'f1', body: BlockOfCode) -> Method:
+    def create_method(*, indent: int, name: str, body: BlockOfCode) -> Method:
         return Method(indent=indent, body=body, name=name, tail='def f1(self, x):')
 
     root = RootNode(
@@ -78,6 +78,7 @@ def test_convert_self_method_calls():
                     ),
                     Test(indent=1, name='it', body=create_block(indent=2)),
                     create_block(indent=1),
+                    BlockOfCode(indent=1, body='f(self.outer)\n'),
                 ),
             ),
         )
@@ -143,6 +144,7 @@ def test_convert_self_method_calls():
                 ),
                 Test(indent=1, name='it', body=create_outer_block(indent=2)),
                 create_outer_block(indent=1),
+                BlockOfCode(indent=1, body='f(mamba.outer)\n'),
             ),
         ),
     )
