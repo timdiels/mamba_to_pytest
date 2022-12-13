@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from mamba_to_pytest.constants import TestScope
-from mamba_to_pytest.node_visitors.convert_self_method_calls import convert_self_method_calls
+from mamba_to_pytest.node_visitors.convert_self_methods import convert_self_methods
 from mamba_to_pytest.nodes import RootNode, TestContext, BlockOfCode, TestSetup, Fixture, Method, NodeBase, \
     TestTeardown, Test
 
@@ -84,7 +84,7 @@ def test_convert_self_method_calls():
     )
 
     # When
-    root = convert_self_method_calls(root)
+    root = convert_self_methods(root)
 
     # Then method calls in code blocks for methods in scope are converted
     def create_converted_method(*, indent: int, name: str = 'f1', body: BlockOfCode) -> Method:

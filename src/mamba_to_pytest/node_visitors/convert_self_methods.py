@@ -13,7 +13,7 @@ _SELF_PARAM_PATTERN = re.compile(r'(\W)self(\W)')
 _FIXTURE_NAME = TestScope.METHOD.fixture_name  # methods only appear in method scoped fixtures
 
 
-class _ConvertSelfMethodCalls(NodeVisitor):
+class _ConvertSelfMethods(NodeVisitor):
     def __init__(self):
         self._method_scopes: list[_MethodScope] = [frozenset()]
         self._current_scope: TestScope | None = None
@@ -67,5 +67,5 @@ class _ConvertSelfMethodCalls(NodeVisitor):
         return node
 
 
-def convert_self_method_calls(root: nodes.RootNode) -> nodes.RootNode:
-    return root.accept(_ConvertSelfMethodCalls())
+def convert_self_methods(root: nodes.RootNode) -> nodes.RootNode:
+    return root.accept(_ConvertSelfMethods())
