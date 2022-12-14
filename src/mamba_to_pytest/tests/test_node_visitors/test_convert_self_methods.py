@@ -78,7 +78,6 @@ def test_convert_self_methods():
                     ),
                     Test(indent=1, name='it', body=create_block(indent=2)),
                     create_block(indent=1),
-                    BlockOfCode(indent=1, body='f(self.outer)\n'),
                 ),
             ),
         )
@@ -92,13 +91,13 @@ def test_convert_self_methods():
         return Method(indent=indent, body=body, name=name, tail='def f1(mamba, x):')
 
     def create_outer_block(indent: int) -> BlockOfCode:
-        return BlockOfCode(indent=indent, body='  mamba.outer(mamba, x)\nself.inner(y)\n')
+        return BlockOfCode(indent=indent, body='  self.outer(mamba, x)\nself.inner(y)\n')
 
     def create_inner_block(indent: int) -> BlockOfCode:
-        return BlockOfCode(indent=indent, body='  mamba.outer(mamba, x)\nmamba.inner(mamba, y)\n')
+        return BlockOfCode(indent=indent, body='  self.outer(mamba, x)\nself.inner(mamba, y)\n')
 
-    outer_cls_block = BlockOfCode(indent=2, body='  mamba_cls.outer(mamba_cls, x)\nself.inner(y)\n')
-    inner_cls_block = BlockOfCode(indent=3, body='  mamba_cls.outer(mamba_cls, x)\nmamba_cls.inner(mamba_cls, y)\n')
+    outer_cls_block = BlockOfCode(indent=2, body='  self.outer(mamba_cls, x)\nself.inner(y)\n')
+    inner_cls_block = BlockOfCode(indent=3, body='  self.outer(mamba_cls, x)\nself.inner(mamba_cls, y)\n')
 
     assert root.children == (
         create_context(
@@ -144,7 +143,6 @@ def test_convert_self_methods():
                 ),
                 Test(indent=1, name='it', body=create_outer_block(indent=2)),
                 create_outer_block(indent=1),
-                BlockOfCode(indent=1, body='f(mamba.outer)\n'),
             ),
         ),
     )

@@ -55,13 +55,12 @@ class _ConvertSelfMethods(NodeVisitor):
 
         body = node.body
         for method in self._method_scopes[-1]:
-            # Replace method calls
+            # Prepend mamba var to self method calls
             method_start = rf'(\W)self(.{method.name})'
-            body = re.sub(rf'{method_start}\(\s*([^)])', rf'\1{fixture_name}\2({fixture_name}, \3', body)
-            body = re.sub(rf'{method_start}\(\s*\)', rf'\1{fixture_name}\2({fixture_name})', body)
-
-            # Replace method references
-            body = re.sub(rf'{method_start}(\W)', rf'\1{fixture_name}\2\3', body)
+            method_with_params = rf'{method_start}\(\s*([^)])'
+            method_without_params = rf'{method_start}\(\s*\)'
+            body = re.sub(method_with_params, rf'\1self\2({fixture_name}, \3', body)
+            body = re.sub(method_without_params, rf'\1self\2({fixture_name})', body)
         return dataclasses.replace(node, body=body)
 
     def _replace_with_scope(self, node: nodes.TestSetup | nodes.TestTeardown):
