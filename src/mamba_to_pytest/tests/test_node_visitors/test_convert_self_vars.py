@@ -3,20 +3,11 @@ from functools import partial
 from frozendict import frozendict
 
 from mamba_to_pytest.constants import TestScope
-from mamba_to_pytest.node_visitors.convert_self_vars import _CollectSelfVars, _ConvertSelfVars, \
-    _VarScopes
+from mamba_to_pytest.node_visitors.convert_self_vars import convert_self_vars
 from mamba_to_pytest.nodes import RootNode, TestContext, BlockOfCode, TestSetup, Fixture, Test, TestTeardown, NodeBase, \
     Method
 
 IMPORT_PYTEST = BlockOfCode(indent=0, body='import pytest\n')
-
-
-def collect_self_vars(root: RootNode) -> _VarScopes:
-    return root.accept(_CollectSelfVars())
-
-
-def _convert_self_vars(root: RootNode, var_scopes: _VarScopes) -> RootNode:
-    return root.accept(_ConvertSelfVars(var_scopes))
 
 
 def create_fixture(indent: int, setup_body: str, setup_scope: TestScope = TestScope.METHOD):
@@ -52,222 +43,108 @@ def create_context(
     )
 
 
-class TestCollectSelfVars:
-    def test_ignore_vars_outside_context_with_self(self):
-        def create_ignore_me_block(indent: int) -> BlockOfCode:
-            return BlockOfCode(indent=indent, body='self.ignore_me = 3\n')
-
-        root = RootNode(
-            children=(
-                create_ignore_me_block(indent=1),
-                create_context(
-                    indent=1,
-                    name='TestName',
-                    has_as_self=False,
-                    other_children=(create_ignore_me_block(indent=2),)
-                ),
-            ),
-        )
-
-        var_scopes = collect_self_vars(root)
-
-        assert not var_scopes
-
-    def test_ignore_non_assignment(self):
-        context = create_context(
-            indent=1,
-            name='TestName',
-            has_as_self=True,
-            other_children=(BlockOfCode(indent=2, body='self.ignore_me # =\nself.ignore_me_too == 3'),)
-        )
-        root = RootNode(children=(context,))
-
-        var_scopes = collect_self_vars(root)
-
-        assert not var_scopes
-
-    def test_collect_assignments_below_context_with_self(self):
-        context = create_context(
-            indent=1,
-            name='TestName',
-            has_as_self=True,
-            other_children=(
-                # Should check for assignments in all descendants
-                create_context(
-                    indent=2,
-                    name='TestName2',
-                    has_as_self=False,
-                    method_fixture=create_fixture(
-                        indent=3,
-                        # This also checks the assignment parsing
-                        setup_body='self.x = 3\nself.multiline_works = 4\nself.method=f(oijoi)',
-                    ),
-                    other_children=(),
-                ),
-                # (Other nodes should not contain self assignments)
-            )
-        )
-        root = RootNode(children=(context,))
-
-        var_scopes = collect_self_vars(root)
-
-        assert var_scopes == {context: frozenset({'self.x', 'self.multiline_works', 'self.method'})}
-
-    def test_multiple_scopes(self):
-        context1 = create_context(
-            indent=1,
-            name='TestName',
-            has_as_self=True,
-            method_fixture=create_fixture(indent=2, setup_body='self.x = 3\n'),
-            other_children=(),
-        )
-        context2 = create_context(
-            indent=1,
-            name='TestName2',
-            has_as_self=True,
-            method_fixture=create_fixture(indent=2, setup_body='self.y = 3\n'),
-            other_children=(),
-        )
-        root = RootNode(children=(context1, context2))
-
-        var_scopes = collect_self_vars(root)
-
-        assert frozendict(var_scopes) == frozendict({
-            context1: frozenset({"self.x"}),
-            context2: frozenset({"self.y"}),
-        })
-
-    def test_nested_vars(self):
-        context = create_context(
-            indent=1,
-            name='TestName',
-            has_as_self=True,
-            other_children=(
-                TestSetup(
-                    body=BlockOfCode(indent=3, body='self.x = 1\nself.y = 2'),
-                    scope=TestScope.METHOD,
-                    indent=2,
-                ),
-                create_context(
-                    indent=2,
-                    name='TestName2',
-                    has_as_self=False,
-                    other_children=(
-                        TestSetup(
-                            indent=3,
-                            body=BlockOfCode(indent=4, body='self.x = 3\n self.z = 1\n'),
-                            scope=TestScope.CLASS,
-                        ),
-                    ),
-                ),
-            )
-        )
-        root = RootNode(children=(context,))
-
-        var_scopes = collect_self_vars(root)
-
-        assert var_scopes == {context: frozenset({'self.x', 'self.y', 'self.z'})}
-
-    def test_collect_method_names_and_self_vars_in_body(self):
-        context = create_context(
-            indent=0,
-            has_as_self=True,
-            other_children=(
-                Method(
-                    indent=1,
-                    name='add_me',
-                    body=BlockOfCode(indent=2, body='self.x = 1\n'),
-                    tail='tail\n',
-                ),
-            )
-        )
-        root = RootNode(children=(context,))
-
-        var_scopes = collect_self_vars(root)
-
-        assert var_scopes == {context: frozenset({'self.x', 'self.add_me'})}
-
-
 class TestConvertSelfVars:
     def test_replace_multiple_occurrences(self):
         context = create_context(
             indent=1,
-            name='TestName',
-            has_as_self=False,  # no longer matters
+            has_as_self=True,
             other_children=(
-                BlockOfCode(body='foo self.x = bar\nself.z self.z(baaa)\nself.y me\n', indent=2),
+                BlockOfCode(body='foo self.x = bar\nself.z self.z(baaa)\nself.y me\nf(self)\n', indent=2),
             ),
         )
-        var_scopes = {context: frozenset({'self.x', 'self.y', 'self.z'})}
         root = RootNode(children=(context,))
 
-        root = _convert_self_vars(root, var_scopes)
+        root = convert_self_vars(root)
 
         assert root.children == (
             create_context(
                 indent=1,
-                name='TestName',
-                has_as_self=False,
+                has_as_self=True,
                 other_children=(
-                    BlockOfCode(body='foo mamba.x = bar\nmamba.z mamba.z(baaa)\nmamba.y me\n', indent=2),
+                    BlockOfCode(body='foo mamba.x = bar\nmamba.z mamba.z(baaa)\nmamba.y me\nf(mamba)\n', indent=2),
                 )
             ),
         )
 
-    def test_multiple_contexts(self):
+    def test_when_to_convert(self):
         # Given
-        def create_context(name, body):
-            return TestContext(
-                indent=1,
-                name=name,
-                has_as_self=False,
-                other_children=(BlockOfCode(body=body, indent=2),),
-                class_fixture=None,
-                method_fixture=None,
+        def create_block(indent: int):
+            return BlockOfCode(body='self.x\n', indent=indent)
+        root = RootNode(
+            children=(
+                create_context(
+                    indent=1,
+                    has_as_self=True,
+                    other_children=(
+                        create_block(2),
+                        create_context(
+                            indent=2,
+                            has_as_self=False,
+                            other_children=(create_block(3),),
+                        ),
+                    ),
+                ),
+                create_context(
+                    indent=1,
+                    has_as_self=False,
+                    other_children=(create_block(2),),
+                ),
             )
-
-        contexts = tuple(create_context(f'TestName{i}', 'self.x self.y\n') for i in range(3))
-        var_scopes = {
-            contexts[0]: frozenset({'self.x'}),
-            contexts[1]: frozenset({'self.y'}),
-        }
-        root = RootNode(children=contexts)
+        )
 
         # When
-        root = _convert_self_vars(root, var_scopes)
+        root = convert_self_vars(root)
 
         # Then
+        def create_converted_block(indent: int):
+            return BlockOfCode(body='mamba.x\n', indent=indent)
         assert root.children == (
-            create_context('TestName0', 'mamba.x self.y\n'),
-            create_context('TestName1', 'self.x mamba.y\n'),
-            create_context('TestName2', 'self.x self.y\n'),
+            create_context(
+                indent=1,
+                # This starts a self scope
+                has_as_self=True,
+                other_children=(
+                    # meaning we convert self vars
+                    create_converted_block(2),
+                    # considering an ancestor context has self, this context is also in the self scope regardless of
+                    # its own has_as_self
+                    create_context(
+                        indent=2,
+                        has_as_self=False,
+                        other_children=(create_converted_block(3),),
+                    ),
+                ),
+            ),
+            # when not in scope, do not convert self vars
+            create_context(
+                indent=1,
+                has_as_self=False,
+                other_children=(create_block(2),),
+            ),
         )
 
     def test_convert_test_node(self):
         block = BlockOfCode(indent=4, body='    self.x\n')
         context = create_context(
             indent=0,
-            name='TestClass',
-            has_as_self=False,
+            has_as_self=True,
             other_children=(Test(indent=2, name='test_thing', body=block),)
         )
-        var_scopes = {context: frozenset({'self.x'})}
         root = RootNode(children=(context,))
 
-        root = _convert_self_vars(root, var_scopes)
+        root = convert_self_vars(root)
 
         assert root.children == (
             create_context(
                 indent=0,
-                name='TestClass',
-                has_as_self=False,
+                has_as_self=True,
                 other_children=(BlockOfCode(body='  def test_thing(self, mamba):\n    mamba.x\n', indent=2),)
             ),
         )
 
     class TestConvertFixture:
         @staticmethod
-        def create_root(scope: TestScope, has_self_vars=False) -> tuple[RootNode, _VarScopes]:
+        def create_root(scope: TestScope, has_as_self=False) -> RootNode:
             fixture = Fixture(
                 setup=TestSetup(indent=2, body=BlockOfCode(indent=4, body='    self.setup = 3\n'), scope=scope),
                 teardown=TestTeardown(indent=2, body=BlockOfCode(indent=4, body='    teardown\n'), scope=scope),
@@ -279,40 +156,37 @@ class TestConvertSelfVars:
                 kwargs = {'class_fixture': fixture}
             else:
                 kwargs = {'method_fixture': fixture}
-            context = create_context(
-                indent=0,
-                name='TestClass',
-                has_as_self=False,
-                other_children=(),
-                **kwargs,
+            return RootNode(
+                children=(
+                    create_context(
+                        indent=0,
+                        name='TestClass',
+                        has_as_self=has_as_self,
+                        other_children=(),
+                        **kwargs,
+                    ),
+                )
             )
 
-            if has_self_vars:
-                var_scopes = {context: frozenset({'self.setup'})}
-            else:
-                var_scopes = {}
-
-            return RootNode(children=(context,)), var_scopes
-
         def test_class_scope(self):
-            root, var_scopes = self.create_root(TestScope.CLASS)
-            root = _convert_self_vars(root, var_scopes)
+            root = self.create_root(TestScope.CLASS)
+            root = convert_self_vars(root)
             assert f'  @pytest.fixture(autouse=True, scope="class")\n' in root.children[1].children[0].body
 
         def test_method_scope(self):
-            root, var_scopes = self.create_root(TestScope.METHOD)
-            root = _convert_self_vars(root, var_scopes)
+            root = self.create_root(TestScope.METHOD)
+            root = convert_self_vars(root)
             assert f'  @pytest.fixture(autouse=True)\n' in root.children[1].children[0].body
 
         def test_with_self_vars(self):
-            root, var_scopes = self.create_root(TestScope.METHOD, has_self_vars=True)
-            root = _convert_self_vars(root, var_scopes)
+            root = self.create_root(TestScope.METHOD, has_as_self=True)
+            root = convert_self_vars(root)
             assert root.children == (
                 IMPORT_PYTEST,
                 create_context(
                     indent=0,
                     name='TestClass',
-                    has_as_self=False,
+                    has_as_self=True,
                     other_children=(
                         BlockOfCode(
                             body=(
@@ -330,8 +204,8 @@ class TestConvertSelfVars:
             )
 
         def test_without_self_vars(self):
-            root, var_scopes = self.create_root(TestScope.METHOD, has_self_vars=False)
-            root = _convert_self_vars(root, var_scopes)
+            root = self.create_root(TestScope.METHOD, has_as_self=False)
+            root = convert_self_vars(root)
             assert root.children == (
                 IMPORT_PYTEST,
                 create_context(
@@ -340,6 +214,8 @@ class TestConvertSelfVars:
                     has_as_self=False,
                     other_children=(
                         BlockOfCode(
+                            # Our given is a bit unrealistic as self should never appear in a fixture outside a self
+                            # scope unless in a class
                             body=(
                                 f'  @pytest.fixture(autouse=True)\n'
                                 f'  def mamba_other1(self):\n'
@@ -357,6 +233,7 @@ class TestConvertSelfVars:
             context = create_context(
                 indent=0,
                 class_fixture=None,
+                has_as_self=True,
                 method_fixture=Fixture(
                     setup=None,
                     teardown=None,
@@ -374,14 +251,14 @@ class TestConvertSelfVars:
                 other_children=(),
             )
             root = RootNode(children=(context,))
-            var_scopes = {context: frozenset({'self.y'})}
 
-            root = _convert_self_vars(root, var_scopes)
+            root = convert_self_vars(root)
 
             assert root.children == (
                 IMPORT_PYTEST,
                 create_context(
                     indent=0,
+                    has_as_self=True,
                     class_fixture=None,
                     method_fixture=None,
                     other_children=(
