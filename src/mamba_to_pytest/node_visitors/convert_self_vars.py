@@ -30,9 +30,7 @@ class _ConvertSelfVars(NodeVisitor):
         return node
 
     def visit_test_context(self, node: nodes.TestContext) -> nodes.TestContext:
-        starts_self_scope = node.has_as_self and not self._in_self_scope
-        if node.has_as_self and self._in_self_scope:
-            print(f"Warning: Ignoring nested `as self` of {node}")
+        starts_self_scope = not self._in_self_scope
         if starts_self_scope:
             self._in_self_scope = True
 

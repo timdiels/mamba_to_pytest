@@ -37,7 +37,6 @@ def test_combine_same_scope_and_move_on_top():
             create_context(
                 indent=1,
                 name='TestName',
-                has_as_self=False,
                 other_children=(
                     block,
                     TestTeardown(body=deep_block, scope=TestScope.CLASS, indent=2),
@@ -57,7 +56,6 @@ def test_combine_same_scope_and_move_on_top():
         create_context(
             indent=1,
             name='TestName',
-            has_as_self=False,
             class_fixture=create_fixture(setup_body=deep_block, teardown_body=deep_block, scope=TestScope.CLASS),
             method_fixture=create_fixture(setup_body=deep_block, teardown_body=deep_block, scope=TestScope.METHOD),
             other_children=(
@@ -77,7 +75,6 @@ def test_setup_or_teardown_can_be_missing():
             create_context(
                 indent=1,
                 name='TestName',
-                has_as_self=False,
                 other_children=(
                     TestSetup(body=block, scope=TestScope.METHOD, indent=2),
                     TestTeardown(body=block, scope=TestScope.CLASS, indent=2),
@@ -92,7 +89,6 @@ def test_setup_or_teardown_can_be_missing():
         create_context(
             indent=1,
             name='TestName',
-            has_as_self=False,
             class_fixture=create_fixture(
                 setup_body=None,
                 teardown_body=block,
@@ -115,7 +111,6 @@ def test_both_can_be_missing():
             create_context(
                 indent=1,
                 name='TestName',
-                has_as_self=False,
                 other_children=(
                     block,
                 ),

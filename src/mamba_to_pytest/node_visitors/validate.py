@@ -16,12 +16,12 @@ class _ValidationVisitor(NodeVisitor):
         self._visit_children(node)
 
     def visit_test_context(self, node: nodes.TestContext) -> None:
-        enter_scope = node.has_as_self and not self._in_self_scope
-        if enter_scope:
+        starts_self_scope = self._in_self_scope
+        if starts_self_scope:
             self._in_self_scope = True
         self._assert_no_duplicate_names(node.children)
         self._visit_children(node)
-        if enter_scope:
+        if starts_self_scope:
             self._in_self_scope = False
 
     def visit_test_setup(self, node: nodes.TestSetup) -> None:

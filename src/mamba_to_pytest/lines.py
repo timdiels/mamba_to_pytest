@@ -30,7 +30,6 @@ class WithLine(LineOfCode):
 
     variable: str
     name: str | None
-    has_as_self: bool
 
     comment: str | None
     """Trailing comment, starting from the '#'"""

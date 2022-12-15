@@ -58,17 +58,17 @@ def test_parse_codeless_line(line):
 
 
 @pytest.mark.parametrize(
-    'line,variable,name,comment,has_as_self',
+    'line,variable,name,comment',
     (
-        ('with it:\n', 'it', None, None, False),
-        ('with before.all:  # comment\n', 'before.all', None, '# comment', False),
-        ('with description("my #. desc"):\n', 'description', "my #. desc", None, False),
-        ('with description("my #. desc") as self:\n', 'description', "my #. desc", None, True),
+        ('with it:\n', 'it', None, None),
+        ('with before.all:  # comment\n', 'before.all', None, '# comment'),
+        ('with description("my #. desc"):\n', 'description', "my #. desc", None),
+        ('with description("my #. desc") as self:\n', 'description', "my #. desc", None),
     )
 )
-def test_parse_a_with_line(line, variable, name, comment, has_as_self):
+def test_parse_a_with_line(line, variable, name, comment):
     node = one(split_mamba(io.StringIO(line)))
-    assert node == WithLine(indent=0, variable=variable, name=name, comment=comment, line=line, has_as_self=has_as_self)
+    assert node == WithLine(indent=0, variable=variable, name=name, comment=comment, line=line)
 
 
 def test_parse_irrelevant_with_line():

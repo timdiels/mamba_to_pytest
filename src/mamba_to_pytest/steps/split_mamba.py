@@ -48,8 +48,7 @@ def _parse_a_with_line(indent: int, tail: str, line: str) -> WithLine:
     return WithLine(
         variable=match.group(1).replace('_', '.'),
         name=match.group(2),
-        has_as_self=bool(match.group(3)),
-        comment=match.group(4),
+        comment=match.group(3),
         line=line + '\n',
         indent=indent,
     )

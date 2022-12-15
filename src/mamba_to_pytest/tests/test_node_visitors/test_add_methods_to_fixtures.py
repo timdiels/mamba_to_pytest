@@ -19,7 +19,6 @@ def create_context(
         indent=indent,
         other_children=other_children,
         name='context1',
-        has_as_self=False,
         class_fixture=class_fixture,
         method_fixture=method_fixture,
     )

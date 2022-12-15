@@ -15,7 +15,6 @@ def create_context(
     return TestContext(
         indent=indent,
         name='context1',
-        has_as_self=True,
         class_fixture=class_fixture,
         method_fixture=method_fixture,
         other_children=other_children,

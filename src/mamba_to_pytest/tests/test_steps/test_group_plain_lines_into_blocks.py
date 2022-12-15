@@ -7,7 +7,7 @@ from mamba_to_pytest.steps.group_plain_lines_into_blocks import group_plain_line
 
 class TestGroupPlainLines:
     def test_group_lines_at_current_indent_or_lower(self):
-        with_line = WithLine(indent=0, line='line3\n', variable='it', name=None, comment=None, has_as_self=False),
+        with_line = WithLine(indent=0, line='line3\n', variable='it', name=None, comment=None),
         lines = [
             LineOfCode(indent=2, line='  line1\n'),
             LineOfCode(indent=4, line='    line2\n'),
@@ -27,7 +27,7 @@ class TestGroupPlainLines:
     @pytest.mark.parametrize(
         'separator_line',
         (
-            WithLine(indent=0, line='line3\n', variable='it', name=None, comment=None, has_as_self=False),
+            WithLine(indent=0, line='line3\n', variable='it', name=None, comment=None),
             MethodHeading(indent=0, line='line3\n', name='not_relevant'),
         ),
     )

@@ -3,7 +3,7 @@ from mamba_to_pytest.steps.ignore_class_and_def_bodies import ignore_class_and_d
 
 
 def _create_with_line(indent: int) -> WithLine:
-    return WithLine(indent=indent, line='with line\n', variable='context', name=None, has_as_self=True, comment=None)
+    return WithLine(indent=indent, line='with line\n', variable='context', name=None, comment=None)
 
 
 def test_ignore_class_and_def_bodies():

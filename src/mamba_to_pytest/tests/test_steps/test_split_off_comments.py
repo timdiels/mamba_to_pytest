@@ -8,7 +8,7 @@ def test_split_off_comments():
     line = LineOfCode(indent=0, line='leave me alone\n'),
     lines = [
         WithLine(
-            indent=2, line='with var1:\n', variable='it', name='name 1', comment='# comment 1', has_as_self=False
+            indent=2, line='with var1:\n', variable='it', name='name 1', comment='# comment 1'
         ),
         line,
     ]
@@ -17,6 +17,6 @@ def test_split_off_comments():
 
     assert lines == (
         LineOfCode(indent=2, line="  # comment 1\n"),
-        WithLine(indent=2, line='with var1:\n', variable='it', name='name 1', comment=None, has_as_self=False),
+        WithLine(indent=2, line='with var1:\n', variable='it', name='name 1', comment=None),
         line,
     )

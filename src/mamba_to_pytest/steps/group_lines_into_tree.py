@@ -54,13 +54,11 @@ def _convert_with_line(line: WithLine, children: tuple[NodeBase, ...]) -> NodeBa
             indent=line.indent,
             name=convert_mamba_name_to_class_name(line.name),
             other_children=children,
-            has_as_self=line.has_as_self,
             class_fixture=None,
             method_fixture=None,
         )
     elif line.variable in ('before.each', 'before.all', 'after.each', 'after.all'):
         assert not line.name
-        assert not line.has_as_self
 
         cls: t.Type[TestSetup] | t.Type[TestTeardown]
         if line.variable.startswith('before'):
@@ -81,7 +79,6 @@ def _convert_with_line(line: WithLine, children: tuple[NodeBase, ...]) -> NodeBa
     else:
         assert line.variable == 'it'
         assert line.name, f'Encountered nameless it():\n{line.line}'
-        assert not line.has_as_self
         return Test(
             indent=line.indent,
             name=convert_mamba_name_to_method_name(line.name),

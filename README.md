@@ -76,3 +76,11 @@ def longer_method_name(self, x):
 If the converter creates a mamba_other fixture or does not replace `self` in places where it should, make sure that one
 of the parent contexts (`with context` or `description`, ...) has an `as self`. The converter intentionally leaves `self`
 alone otherwise; it's surprising that this worked in mamba to begin with.
+
+
+## Quirks / shortcomings
+Other than the ones listed in manual fixes:
+
+- It's very easy to forget `as self` on a with line that the converter just assumes it's implicitly present. This is
+  fine so long as you do not use `self` as a regular variable outside a class or method (in a class), otherwise those
+  would be renamed to `mamba`.

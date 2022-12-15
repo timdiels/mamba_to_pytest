@@ -36,8 +36,8 @@ with description("Replace weird characters ~!@#$%^^&**()_+{}[]:<>?|,./\"\\'"):
     with it("Replace weird characters in methods too ~!@#$%^^&**()_+{}[]:<>?|,./\"\\'"):
         pass
 
-# `as self` becomes a mamba and mamba_cls fixture
-with description("top level fixture") as self:
+# It creates mamba/mamba_cls fixture, regardless of presence of `as self`
+with description("top level fixture"):
     with context("before each has default scope"):
         with before.each:
             self.x = 1

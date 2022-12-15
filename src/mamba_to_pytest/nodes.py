@@ -77,7 +77,6 @@ class BlockOfCode(NodeBase):
 @dataclasses.dataclass(frozen=True)
 class TestContext(NodeBase):
     name: str
-    has_as_self: bool
     indent: int
     class_fixture: Fixture | None
     method_fixture: Fixture | None
