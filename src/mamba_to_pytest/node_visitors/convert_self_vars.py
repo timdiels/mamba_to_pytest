@@ -99,7 +99,7 @@ class _ConvertSelfVars(NodeVisitor):
             code.write(' ' * method.indent + method.tail)
             code.write(method.body.body)
 
-        if fixture_has_return:
+        if fixture_has_return and node.scope == TestScope.CLASS:
             code.write(f'{body_indent_str}{fixture_name} = {fixture_name}.copy()\n')
 
         for method in node.methods:

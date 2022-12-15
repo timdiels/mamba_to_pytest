@@ -169,16 +169,31 @@ class TestConvertSelfVars:
             )
 
         def test_class_scope(self):
-            root = self.create_root(TestScope.CLASS)
+            root = self.create_root(TestScope.CLASS, has_as_self=True)
             root = convert_self_vars(root)
-            assert f'  @pytest.fixture(autouse=True, scope="class")\n' in root.children[1].children[0].body
+            assert root.children == (
+                IMPORT_PYTEST,
+                create_context(
+                    indent=0,
+                    name='TestClass',
+                    has_as_self=True,
+                    other_children=(
+                        BlockOfCode(
+                            body=(
+                                '  @pytest.fixture(autouse=True, scope="class")\n'
+                                '  def mamba_cls(self, mamba_cls):\n'
+                                '    mamba_cls = mamba_cls.copy()\n'
+                                '    mamba_cls.setup = 3\n'
+                                '    yield mamba_cls\n'
+                                '    teardown\n'
+                            ),
+                            indent=2,
+                        ),
+                    )
+                ),
+            )
 
         def test_method_scope(self):
-            root = self.create_root(TestScope.METHOD)
-            root = convert_self_vars(root)
-            assert f'  @pytest.fixture(autouse=True)\n' in root.children[1].children[0].body
-
-        def test_with_self_vars(self):
             root = self.create_root(TestScope.METHOD, has_as_self=True)
             root = convert_self_vars(root)
             assert root.children == (
@@ -190,12 +205,11 @@ class TestConvertSelfVars:
                     other_children=(
                         BlockOfCode(
                             body=(
-                                f'  @pytest.fixture(autouse=True)\n'
-                                f'  def mamba(self, mamba):\n'
-                                f'    mamba = mamba.copy()\n'
-                                f'    mamba.setup = 3\n'
-                                f'    yield mamba\n'
-                                f'    teardown\n'
+                                '  @pytest.fixture(autouse=True)\n'
+                                '  def mamba(self, mamba):\n'
+                                '    mamba.setup = 3\n'
+                                '    yield mamba\n'
+                                '    teardown\n'
                             ),
                             indent=2,
                         ),
@@ -268,7 +282,6 @@ class TestConvertSelfVars:
                                 '  def mamba(self, mamba):\n'
                                 '    def add_thingy(mamba, x):\n'
                                 '      mamba.y = x\n\n'
-                                '    mamba = mamba.copy()\n'
                                 '    mamba.add_thingy = add_thingy\n'
                                 '    yield mamba\n\n'
                             ),
