@@ -73,7 +73,7 @@ class _ConvertSelfVars(NodeVisitor):
         self._current_fixture = None
 
         if node.scope == TestScope.CLASS:
-            pytest_scope = ', scope="class"'
+            pytest_scope = ', scope="module"'
         else:
             pytest_scope = ''
 

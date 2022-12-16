@@ -9,7 +9,7 @@ class MambaVars:
         return copy(self)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope="module")
 def mamba_cls():
     return MambaVars()
 

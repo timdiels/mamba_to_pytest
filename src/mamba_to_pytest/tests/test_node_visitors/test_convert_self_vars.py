@@ -158,7 +158,7 @@ class TestConvertSelfVars:
                     other_children=(
                         BlockOfCode(
                             body=(
-                                '  @pytest.fixture(autouse=True, scope="class")\n'
+                                '  @pytest.fixture(autouse=True, scope="module")\n'
                                 '  def mamba_cls(self, mamba_cls):\n'
                                 '    mamba_cls = mamba_cls.copy()\n'
                                 '    mamba_cls.setup = 3\n'

@@ -84,3 +84,23 @@ Other than the ones listed in manual fixes:
 - It's very easy to forget `as self` on a with line that the converter just assumes it's implicitly present. This is
   fine so long as you do not use `self` as a regular variable outside a class or method (in a class), otherwise those
   would be renamed to `mamba`.
+- before.all is converted to module scoped fixtures as class scoped fixtures have a tendency to be rerun each time the
+  pytest runner switches to a test at a different nesting level. E.g.
+
+  ```python
+  with context(...) as self:
+    with before.all:
+        ...
+    with it('1'):
+        ...
+    with context(...):
+        with it('2'):
+            ...
+    with it('3'):
+        ...
+    with it('4'):
+        ...
+  ```
+  
+  Mamba would run the before.all once and runs tests breadth first, i.e. 1, 3, 4, 2.
+  pytest Runs depth first, i.e. 1, 2, 3, 4 and runs the before.all before test 1, and 3.
