@@ -109,3 +109,46 @@ Other than the ones listed in manual fixes:
   
   Mamba would run the before.all once and runs tests breadth first, i.e. 1, 3, 4, 2.
   pytest Runs depth first, i.e. 1, 2, 3, 4 and runs the before.all before test 1, and 3.
+
+## Design of the converter
+### Approaches considered
+The approach taken is an adhoc parser.
+
+#### Use ast.parse/unparse?
+This is what mamba uses internally, this potentially would have allowed reusing some of mamba’s code to make sense of
+the code in order to rewrite it to pytest instead of mamba’s usual output. Could have modified the mamba source code to
+make those changes.
+
+But `unparse(parse(x))` loses comments, formatting and `unparse` may even fail for complex ASTs according to python docs.
+
+#### Prepend each file with imports which implement mamba without magic?
+Mamba code is syntactically valid, I briefly considered reimplementing mamba describe, it, … using proper context managers in hopes of PyCharm being able to make sense of it.
+
+But the code would still look like mamba, with its `self` var leading to smelly code.
+
+#### Write an adhoc parser
+Parse just enough, or maybe even a bit less, for the bits of the code that we need to change. Hopefully this can understand most of the files, the remainder can be converted manually.
+
+
+### mamba facts
+- description, describe, context can be treated as equivalent when converting
+- before.all, before.each, after.all, after.each have a compatible execution order as pytest fixtures (function and
+  module scope). The only difference is that pytest runs tests depth first whereas mamba is breadth first. In the
+  following example pytest will run the class fixture once for test1, and once more after TestsDeeper. The equivalent mamba code would run the fixture once, run test 1, 2, 3 and only then would it run the deeper tests. But see also the before/after.all shortcoming above.
+
+  ```python
+  class Tests:
+      @pytest.fixture(scope='class')
+      def my_fixture(self):
+          ...
+
+      def test1(self): ...
+      
+      class TestsDeeper:
+          def test_deep(self): ...
+
+      def test2(self): ...
+      def test3(self): ...
+  ```
+
+- All mamba files end in _spec.py
