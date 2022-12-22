@@ -1,6 +1,11 @@
 Converts mamba tests to pytest. Usually some manual fixes are required, but it's a good starting point. To verify things went well: compare the number of tests ran, make sure they pass, compare test coverage.
 
-This project is made available under the MIT license.
+To see it in action, compare [this converted file](./src/mamba_to_pytest/tests_manual/test_foo_example.py) to
+[its mamba source](./src/mamba_to_pytest/tests_manual/test_foo_spec.py).
+
+This project is made available under the MIT license. Developed at [ONTOFORCE](https://www.ontoforce.com/),
+they kindly let me share it.
+
 
 ## Usage
 Install with:
@@ -25,8 +30,8 @@ adjust it automatically). If the tests fail, you can adjust either the mamba fil
 
 
 ### Manual fixes after conversion
-- Prefix test directories with `test_`
-- Create a `conftest.py` (copy tests_manual/conftest.py) at the root of any tests which use the mamba pytest fixture
+- Copy [this conftest.py](./src/mamba_to_pytest/tests_manual/conftest.py) to the root of any tests which use the mamba
+  pytest fixture.
 
 
 ### Manual fixes in mamba files
